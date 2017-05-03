@@ -5,19 +5,27 @@ from requests import get
 import numpy as np
 import time
 import datetime
+import csv
 
 URL = "http://localhost:5000/memory/percent"
-FILE_URL = "ram_centroids_" + str(datetime.date.today()) + ".csv"
+CENTROIDS_URL = "ram_centroids_" + str(datetime.date.today()) + ".csv"
+REGRESSION_URL = "ram_regression_" + str(datetime.date.today()) + ".csv"
+PREDICTION_URL = "ram_prediction_" + str(datetime.date.today()) + ".csv"
 
-def save(data):
-    np.savetxt(FILE_URL, data, fmt='%.5f', delimiter=',')
+def save(url, data):
+    np.savetxt(url, data, fmt='%.5f', delimiter=',')
+
+def save_prediction(url, data):
+    myfile = open(url, 'a')
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    wr.writerow(data)
 
 def retrieve():
     try:
         r = get(URL)
         response = r.json()
         data = [int(time.clock()), int(response)]
-        print(data)
+        # print(data)
         return data 
     except Exception as e:
         print("Error %s" % e)
@@ -39,13 +47,17 @@ while True:
 
         labels = kmeans.labels_
         centroids = kmeans.cluster_centers_
-        save(centroids)
-        # x = [centroids[:,0]]
-        # y = [centroids[:,1]]
+        save(CENTROIDS_URL, centroids)
+        x = centroids[:,[0]]
+        y = centroids[:,[1]]
         # print(x)
         # print(y)
-        # regr.fit(x, y)
-        # print(regr.coef_)
+        regr.fit(x, y)
+        save(REGRESSION_URL, regr.coef_)
+        # prediksi 2 detik setelahnya
+        prediction = [(time.clock()+2), regr.predict(time.clock()+2).tolist()[0][0]]
+        save_prediction(PREDICTION_URL, prediction)
+        print(prediction)
 
     # for i in range(k):
     #     # select only data observations with cluster label == i
